@@ -1,0 +1,23 @@
+# Rust build output
+/target/
+
+# Distribution artifacts
+/dist/
+
+# macOS
+.DS_Store
+
+# Editor and local settings
+.vscode/
+.idea/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# Environment files
+.env
+.env.*

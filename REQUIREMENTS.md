@@ -1,0 +1,9 @@
+- Use Rust language.
+- Do not use any dependencies.
+- Build a cross-platform CLI executable tool named `nver`.
+- Detect the latest Git tag and bump major, minor, or patch.
+- Accept X.X.X, vX.X.X, and v.X.X.X.
+- Prefer small functions, tests, and clear error messages.
+- Ask before changing project structure or dependencies.
+- When creating a new tag, collect all commit messages since the most recent tag and include them in the annotated tag message.
+- Create Makefile to generate builds on different platforms.
