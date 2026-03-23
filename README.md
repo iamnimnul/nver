@@ -18,52 +18,90 @@ nver is a lightweight cross-platform Rust CLI that reads your latest Git version
 
 Use rustup:
 
+```sh
 curl https://sh.rustup.rs -sSf | sh
+```
 
 Then restart your shell and verify:
 
+```sh
 cargo --version
 rustc --version
+```
 
 ## Build and Test
 
 - Debug build:
+  ```sh
   make build
+  ```
 - Run tests:
+  ```sh
   make test
+  ```
 - Optimized build:
+  ```sh
   make release
+  ```
 
 ## Cross-Platform Builds
 
 The Makefile includes targets for common platforms.
 
 - macOS (Apple Silicon):
+  ```sh
   make build-macos-arm64
+  ```
 - macOS (Intel):
+  ```sh
   make build-macos-x86_64
+  ```
 - Linux x86_64:
+  ```sh
   make build-linux-x86_64
+  ```
 - Linux aarch64:
+  ```sh
   make build-linux-arm64
+  ```
 - Windows x86_64:
+  ```sh
   make build-windows-x86_64
+  ```
 
-Build artifacts are copied into dist/<target-triple>/.
+Build artifacts are copied into `dist/<target-triple>/`.
+
+## GitHub Release Artifacts
+
+The release workflow in `.github/workflows/release.yml` builds and uploads these executables:
+
+- `nver-linux-x86_64`
+- `nver-linux-x86_64-musl`
+- `nver-macos-x86_64`
+- `nver-macos-arm64`
+- `nver-windows-x86_64.exe`
+
+The workflow is triggered on tag pushes and publishes assets to the GitHub Release for that tag.
 
 ## CLI Usage
 
 Dry run (does not create a tag):
 
+```sh
 cargo run -- patch --dry-run
+```
 
 Create a new tag:
 
+```sh
 cargo run -- minor
+```
 
 Binary usage after build:
 
+```sh
 ./target/debug/nver patch --dry-run
+```
 
 ## What nver Does
 
@@ -78,4 +116,6 @@ Binary usage after build:
 - If no valid version tag is found, nver exits with a clear error message.
 - Created tags are local. Push with:
 
+```sh
 git push origin --tags
+```
