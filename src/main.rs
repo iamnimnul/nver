@@ -64,9 +64,26 @@ impl Version {
         }
     }
 
-    fn as_tag(self) -> String {
-        format!("v{}.{}.{}", self.major, self.minor, self.patch)
+    fn as_tag(self, format: TagFormat) -> String {
+        match format {
+            TagFormat::Plain => format!("{}.{}.{}", self.major, self.minor, self.patch),
+            TagFormat::V => format!("v{}.{}.{}", self.major, self.minor, self.patch),
+            TagFormat::VDot => format!("v.{}.{}.{}", self.major, self.minor, self.patch),
+        }
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum TagFormat {
+    Plain,
+    V,
+    VDot,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct ParsedTag {
+    version: Version,
+    format: TagFormat,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -103,9 +120,9 @@ fn main() {
 fn run() -> Result<(), AppError> {
     let args = parse_args(env::args().skip(1).collect())?;
     let latest_tag = find_latest_version_tag()?;
-    let current_version = parse_version_tag(&latest_tag)?;
-    let next_version = current_version.bump(args.bump_type);
-    let next_tag = next_version.as_tag();
+    let parsed = parse_version_tag(&latest_tag)?;
+    let next_version = parsed.version.bump(args.bump_type);
+    let next_tag = next_version.as_tag(parsed.format);
 
     if args.dry_run {
         println!("Current tag: {latest_tag}");
@@ -173,14 +190,14 @@ fn find_latest_version_tag() -> Result<String, AppError> {
     Err(AppError::NoValidTagFound)
 }
 
-fn parse_version_tag(tag: &str) -> Result<Version, AppError> {
+fn parse_version_tag(tag: &str) -> Result<ParsedTag, AppError> {
     let trimmed = tag.trim();
-    let without_prefix = if let Some(rest) = trimmed.strip_prefix("v.") {
-        rest
+    let (without_prefix, format) = if let Some(rest) = trimmed.strip_prefix("v.") {
+        (rest, TagFormat::VDot)
     } else if let Some(rest) = trimmed.strip_prefix('v') {
-        rest
+        (rest, TagFormat::V)
     } else {
-        trimmed
+        (trimmed, TagFormat::Plain)
     };
 
     let parts: Vec<&str> = without_prefix.split('.').collect();
@@ -198,10 +215,13 @@ fn parse_version_tag(tag: &str) -> Result<Version, AppError> {
         .parse::<u64>()
         .map_err(|_| AppError::InvalidVersionTag(tag.to_string()))?;
 
-    Ok(Version {
-        major,
-        minor,
-        patch,
+    Ok(ParsedTag {
+        version: Version {
+            major,
+            minor,
+            patch,
+        },
+        format,
     })
 }
 
@@ -262,10 +282,13 @@ mod tests {
         let v = parse_version_tag("1.2.3").expect("should parse");
         assert_eq!(
             v,
-            Version {
-                major: 1,
-                minor: 2,
-                patch: 3
+            ParsedTag {
+                version: Version {
+                    major: 1,
+                    minor: 2,
+                    patch: 3
+                },
+                format: TagFormat::Plain
             }
         );
     }
@@ -275,10 +298,13 @@ mod tests {
         let v = parse_version_tag("v1.2.3").expect("should parse");
         assert_eq!(
             v,
-            Version {
-                major: 1,
-                minor: 2,
-                patch: 3
+            ParsedTag {
+                version: Version {
+                    major: 1,
+                    minor: 2,
+                    patch: 3
+                },
+                format: TagFormat::V
             }
         );
     }
@@ -288,12 +314,36 @@ mod tests {
         let v = parse_version_tag("v.1.2.3").expect("should parse");
         assert_eq!(
             v,
-            Version {
-                major: 1,
-                minor: 2,
-                patch: 3
+            ParsedTag {
+                version: Version {
+                    major: 1,
+                    minor: 2,
+                    patch: 3
+                },
+                format: TagFormat::VDot
             }
         );
+    }
+
+    #[test]
+    fn preserves_plain_tag_format_on_bump() {
+        let parsed = parse_version_tag("1.2.3").expect("should parse");
+        let next_tag = parsed.version.bump(BumpType::Patch).as_tag(parsed.format);
+        assert_eq!(next_tag, "1.2.4");
+    }
+
+    #[test]
+    fn preserves_v_tag_format_on_bump() {
+        let parsed = parse_version_tag("v1.2.3").expect("should parse");
+        let next_tag = parsed.version.bump(BumpType::Patch).as_tag(parsed.format);
+        assert_eq!(next_tag, "v1.2.4");
+    }
+
+    #[test]
+    fn preserves_v_dot_tag_format_on_bump() {
+        let parsed = parse_version_tag("v.1.2.3").expect("should parse");
+        let next_tag = parsed.version.bump(BumpType::Patch).as_tag(parsed.format);
+        assert_eq!(next_tag, "v.1.2.4");
     }
 
     #[test]
