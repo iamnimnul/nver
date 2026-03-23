@@ -1,8 +1,6 @@
 # nver
 
-nver is a cross-platform Rust CLI that finds the latest Git version tag,
-bumps semantic version by major, minor, or patch, and creates an annotated
-tag with commit messages since the previous release.
+nver is a lightweight cross-platform Rust CLI that reads your latest Git version tag, bumps major, minor, or patch, and creates a new annotated release tag. It supports semantic tags in three styles (1.2.3, v1.2.3, v.1.2.3), preserves the original style when bumping, and includes commit messages since the previous tag in the annotation.
 
 ## Supported Tag Formats
 
