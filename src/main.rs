@@ -4,6 +4,8 @@ use std::io;
 use std::io::Write;
 use std::process::Command;
 
+const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
+
 #[derive(Debug)]
 enum AppError {
     Io(io::Error),
@@ -169,7 +171,9 @@ fn parse_args(args: Vec<String>) -> Result<CliArgs, AppError> {
 }
 
 fn usage() -> String {
-    "Usage: nver <major|minor|patch> [--dry-run]".to_string()
+    format!(
+        "Usage: nver <major|minor|patch> [--dry-run]\nnver version: {APP_VERSION}"
+    )
 }
 
 fn run_git(args: &[&str]) -> Result<String, AppError> {
@@ -472,6 +476,13 @@ mod tests {
                 dry_run: false
             }
         );
+    }
+
+    #[test]
+    fn usage_contains_current_version() {
+        let text = usage();
+        assert!(text.contains("Usage: nver <major|minor|patch> [--dry-run]"));
+        assert!(text.contains(APP_VERSION));
     }
 
     #[test]
