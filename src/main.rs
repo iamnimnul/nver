@@ -121,7 +121,13 @@ fn main() {
 }
 
 fn run() -> Result<(), AppError> {
-    let args = parse_args(env::args().skip(1).collect())?;
+    let raw_args: Vec<String> = env::args().skip(1).collect();
+    if should_show_version(&raw_args) {
+        println!("nver {APP_VERSION}");
+        return Ok(());
+    }
+
+    let args = parse_args(raw_args)?;
     let latest_tag = find_latest_version_tag()?;
     let parsed = parse_version_tag(&latest_tag)?;
     let next_version = parsed.version.bump(args.bump_type);
@@ -171,9 +177,11 @@ fn parse_args(args: Vec<String>) -> Result<CliArgs, AppError> {
 }
 
 fn usage() -> String {
-    format!(
-        "Usage: nver <major|minor|patch> [--dry-run]\nnver version: {APP_VERSION}"
-    )
+    "Usage: nver <major|minor|patch> [--dry-run]".to_string()
+}
+
+fn should_show_version(args: &[String]) -> bool {
+    args.iter().any(|arg| arg == "--version")
 }
 
 fn run_git(args: &[&str]) -> Result<String, AppError> {
@@ -479,10 +487,15 @@ mod tests {
     }
 
     #[test]
-    fn usage_contains_current_version() {
-        let text = usage();
-        assert!(text.contains("Usage: nver <major|minor|patch> [--dry-run]"));
-        assert!(text.contains(APP_VERSION));
+    fn version_flag_is_detected() {
+        let args = vec!["--version".to_string()];
+        assert!(should_show_version(&args));
+    }
+
+    #[test]
+    fn version_flag_is_not_detected_without_flag() {
+        let args = vec!["patch".to_string(), "--dry-run".to_string()];
+        assert!(!should_show_version(&args));
     }
 
     #[test]
