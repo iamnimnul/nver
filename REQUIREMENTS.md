@@ -6,4 +6,5 @@
 - Prefer small functions, tests, and clear error messages.
 - Ask before changing project structure or dependencies.
 - When creating a new tag, collect all commit messages since the most recent tag and include them in the annotated tag message.
+- After creating a tag, ask whether to push the tag to the remote repository with a y/n question. If "n" is selected, do not execute the push and print the exact push command instead.
 - Create Makefile to generate builds on different platforms.

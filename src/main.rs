@@ -1,6 +1,7 @@
 use std::env;
 use std::fmt;
 use std::io;
+use std::io::Write;
 use std::process::Command;
 
 #[derive(Debug)]
@@ -135,6 +136,17 @@ fn run() -> Result<(), AppError> {
     create_annotated_tag(&next_tag, &message)?;
 
     println!("Created annotated tag: {next_tag}");
+    let push_command = build_push_command(&next_tag);
+
+    if prompt_yes_no("Push this tag to remote (origin)? [y/n]: ")? {
+        push_tag_to_origin(&next_tag)?;
+        println!("Pushed tag to origin: {next_tag}");
+    } else {
+        println!("Tag was not pushed.");
+        println!("Run this command to push it later:");
+        println!("{push_command}");
+    }
+
     Ok(())
 }
 
@@ -271,6 +283,39 @@ fn create_annotated_tag(tag: &str, message: &str) -> Result<(), AppError> {
             &stderr
         }
     )))
+}
+
+fn build_push_command(tag: &str) -> String {
+    format!("git push origin {tag}")
+}
+
+fn push_tag_to_origin(tag: &str) -> Result<(), AppError> {
+    run_git(&["push", "origin", tag])?;
+    Ok(())
+}
+
+fn parse_yes_no(input: &str) -> Option<bool> {
+    match input.trim().to_ascii_lowercase().as_str() {
+        "y" | "yes" => Some(true),
+        "n" | "no" => Some(false),
+        _ => None,
+    }
+}
+
+fn prompt_yes_no(prompt: &str) -> Result<bool, AppError> {
+    loop {
+        print!("{prompt}");
+        io::stdout().flush()?;
+
+        let mut answer = String::new();
+        io::stdin().read_line(&mut answer)?;
+
+        if let Some(value) = parse_yes_no(&answer) {
+            return Ok(value);
+        }
+
+        println!("Please answer with 'y' or 'n'.");
+    }
 }
 
 #[cfg(test)]
@@ -440,5 +485,31 @@ mod tests {
         assert!(msg.contains("Changes since v1.0.0:"));
         assert!(msg.contains("- feat: add release command (abc123)"));
         assert!(msg.contains("- fix: handle empty tag list (def456)"));
+    }
+
+    #[test]
+    fn parses_yes_answer() {
+        assert_eq!(parse_yes_no("y"), Some(true));
+        assert_eq!(parse_yes_no("Y"), Some(true));
+        assert_eq!(parse_yes_no("yes"), Some(true));
+    }
+
+    #[test]
+    fn parses_no_answer() {
+        assert_eq!(parse_yes_no("n"), Some(false));
+        assert_eq!(parse_yes_no("N"), Some(false));
+        assert_eq!(parse_yes_no("no"), Some(false));
+    }
+
+    #[test]
+    fn rejects_invalid_yes_no_answer() {
+        assert_eq!(parse_yes_no("maybe"), None);
+        assert_eq!(parse_yes_no(""), None);
+    }
+
+    #[test]
+    fn builds_push_command_for_specific_tag() {
+        let cmd = build_push_command("v1.2.3");
+        assert_eq!(cmd, "git push origin v1.2.3");
     }
 }

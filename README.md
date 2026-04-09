@@ -114,8 +114,5 @@ Binary usage after build:
 ## Notes
 
 - If no valid version tag is found, nver exits with a clear error message.
-- Created tags are local. Push with:
-
-```sh
-git push origin --tags
-```
+- After creating a tag, nver asks whether to push it to `origin`.
+- If you answer `n`, nver prints the exact `git push origin <tag>` command without executing it.
