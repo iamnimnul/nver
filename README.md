@@ -116,3 +116,5 @@ Binary usage after build:
 - If no valid version tag is found, nver exits with a clear error message.
 - After creating a tag, nver asks whether to push it to `origin`.
 - If you answer `n`, nver prints the exact `git push origin <tag>` command without executing it.
+- Use `--push` to skip the prompt and push automatically.
+- Use `--no-push` to skip the prompt and print the push command without executing it.

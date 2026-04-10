@@ -7,4 +7,5 @@
 - Ask before changing project structure or dependencies.
 - When creating a new tag, collect all commit messages since the most recent tag and include them in the annotated tag message.
 - After creating a tag, ask whether to push the tag to the remote repository with a y/n question. If "n" is selected, do not execute the push and print the exact push command instead.
+- Allow non-interactive push behavior with flags: `--push` and `--no-push`. When either `--push` or `--no-push` is provided, skip the y/n prompt.
 - Create Makefile to generate builds on different platforms.

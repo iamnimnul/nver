@@ -111,6 +111,14 @@ impl BumpType {
 struct CliArgs {
     bump_type: BumpType,
     dry_run: bool,
+    push_behavior: PushBehavior,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PushBehavior {
+    Ask,
+    Push,
+    NoPush,
 }
 
 fn main() {
@@ -146,7 +154,13 @@ fn run() -> Result<(), AppError> {
     println!("Created annotated tag: {next_tag}");
     let push_command = build_push_command(&next_tag);
 
-    if prompt_yes_no("Push this tag to remote (origin)? [y/n]: ")? {
+    let should_push = match args.push_behavior {
+        PushBehavior::Ask => prompt_yes_no("Push this tag to remote (origin)? [y/n]: ")?,
+        PushBehavior::Push => true,
+        PushBehavior::NoPush => false,
+    };
+
+    if should_push {
         push_tag_to_origin(&next_tag)?;
         println!("Pushed tag to origin: {next_tag}");
     } else {
@@ -165,19 +179,36 @@ fn parse_args(args: Vec<String>) -> Result<CliArgs, AppError> {
 
     let bump_type = BumpType::parse(&args[0]).ok_or_else(|| AppError::Usage(usage()))?;
     let mut dry_run = false;
+    let mut push_behavior = PushBehavior::Ask;
 
     for arg in args.iter().skip(1) {
         match arg.as_str() {
             "--dry-run" => dry_run = true,
+            "--push" => {
+                if push_behavior == PushBehavior::NoPush {
+                    return Err(AppError::Usage(usage()));
+                }
+                push_behavior = PushBehavior::Push;
+            }
+            "--no-push" => {
+                if push_behavior == PushBehavior::Push {
+                    return Err(AppError::Usage(usage()));
+                }
+                push_behavior = PushBehavior::NoPush;
+            }
             _ => return Err(AppError::Usage(usage())),
         }
     }
 
-    Ok(CliArgs { bump_type, dry_run })
+    Ok(CliArgs {
+        bump_type,
+        dry_run,
+        push_behavior,
+    })
 }
 
 fn usage() -> String {
-    "Usage: nver <major|minor|patch> [--dry-run]".to_string()
+    "Usage: nver <major|minor|patch> [--dry-run] [--push|--no-push]".to_string()
 }
 
 fn should_show_version(args: &[String]) -> bool {
@@ -468,7 +499,8 @@ mod tests {
             parsed,
             CliArgs {
                 bump_type: BumpType::Minor,
-                dry_run: true
+                dry_run: true,
+                push_behavior: PushBehavior::Ask
             }
         );
     }
@@ -481,9 +513,34 @@ mod tests {
             parsed,
             CliArgs {
                 bump_type: BumpType::Patch,
-                dry_run: false
+                dry_run: false,
+                push_behavior: PushBehavior::Ask
             }
         );
+    }
+
+    #[test]
+    fn parses_args_with_push() {
+        let args = vec!["patch".to_string(), "--push".to_string()];
+        let parsed = parse_args(args).expect("args should parse");
+        assert_eq!(parsed.push_behavior, PushBehavior::Push);
+    }
+
+    #[test]
+    fn parses_args_with_no_push() {
+        let args = vec!["patch".to_string(), "--no-push".to_string()];
+        let parsed = parse_args(args).expect("args should parse");
+        assert_eq!(parsed.push_behavior, PushBehavior::NoPush);
+    }
+
+    #[test]
+    fn rejects_push_and_no_push_together() {
+        let args = vec![
+            "patch".to_string(),
+            "--push".to_string(),
+            "--no-push".to_string(),
+        ];
+        assert!(parse_args(args).is_err());
     }
 
     #[test]
